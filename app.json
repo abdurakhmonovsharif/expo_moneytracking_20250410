@@ -1,0 +1,73 @@
+{
+  "expo": {
+    "name": "money_tracking",
+    "slug": "moneytracking",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "moneytracking",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#122332"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "usesAppleSignIn": true,
+      "bundleIdentifier": "com.abdurakhmonovsharif.moneytracking",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Allow access to the microphone to record voice transactions.",
+        "NSCameraUsageDescription": "Allow camera access to take wallet and profile photos.",
+        "NSPhotoLibraryUsageDescription": "Allow access to your photos to set wallet and profile images.",
+        "NSPhotoLibraryAddUsageDescription": "Allow saving edited photos from wallet and profile image picker.",
+        "NSUserNotificationsUsageDescription": "Allow notifications for budget alerts and updates.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      },
+      "appleTeamId": "KGLX5K8Z2T"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#122332"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS"
+      ],
+      "package": "com.abdurakhmonovsharif.moneytracking"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "39f5243c-2154-4ca6-bbbb-a87baea03e73"
+      }
+    },
+    "newArchEnabled": true,
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/98d30921-319f-4f9a-9e14-63b11bd039f4"
+    },
+    "plugins": [
+      "expo-notifications",
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow access to your photos to set wallet and profile images.",
+          "cameraPermission": "Allow camera access to take wallet and profile photos."
+        }
+      ]
+    ],
+    "owner": "abdurakhmonovsharif"
+  }
+}
