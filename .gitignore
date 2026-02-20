@@ -4,6 +4,9 @@ dist/
 npm-debug.*
 .env
 .env.*
+backend/.env.production
+backend/secrets/*
+!backend/secrets/.gitkeep
 *.jks
 *.p8
 *.p12

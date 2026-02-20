@@ -118,6 +118,69 @@ cd backend
 uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
 ```
 
+## Docker (production)
+
+This production setup uses:
+
+- `api`: FastAPI with `gunicorn` + `uvicorn` workers
+- `nginx`: reverse proxy in front of API (`:80`)
+
+### 1) Prepare production env
+
+```bash
+cd backend
+cp .env.production.example .env.production
+```
+
+Fill real values inside `.env.production`.
+
+### 2) Prepare secrets
+
+Create `backend/secrets/` files:
+
+- `firebase-service-account.json` (required)
+- `google-play-service-account.json` (required only if you use Google Play IAP verification)
+
+Compose mounts this folder to `/run/secrets` in container.
+
+### 3) Build and start
+
+```bash
+cd backend
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+### 4) Health check
+
+```bash
+curl http://localhost/health
+```
+
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+### 5) Logs / stop
+
+```bash
+cd backend
+docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml down
+```
+
+### Notes
+
+- If you deploy behind Cloudflare/ALB/Nginx ingress, keep TLS termination there.
+- If you want local TLS inside this compose, add `:443` and cert config to `docker/nginx.conf`.
+- You can validate compose syntax before deploy:
+
+```bash
+cd backend
+BACKEND_ENV_FILE=.env.production.example docker compose -f docker-compose.prod.yml config
+```
+
 ## Push Notifications (FCM + Expo fallback)
 
 - Backend sends push when notification docs are created.
