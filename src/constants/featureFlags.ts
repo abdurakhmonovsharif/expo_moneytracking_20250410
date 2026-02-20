@@ -1,7 +1,8 @@
 const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
-// Custom scheme redirect; no Expo proxy allowed
+// Google Sign-In redirect (Expo auth proxy by default)
 const GOOGLE_REDIRECT_URI =
-  process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI ?? 'moneytracking://oauthredirect';
+  process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI ??
+  'https://auth.expo.io/@abdurakhmonovsharif/moneytracking';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
 const IAP_IOS_SUBSCRIPTION_ID =
   process.env.EXPO_PUBLIC_IAP_IOS_SUBSCRIPTION_ID ?? '';

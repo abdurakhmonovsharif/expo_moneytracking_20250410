@@ -303,7 +303,7 @@ export const useGoogleAuth = () => {
 
       if (usesExpoAuthProxyRedirect) {
         const returnUrl = AuthSession.makeRedirectUri({
-          scheme: 'moneytracking',
+          scheme: 'com.voxwallet.app',
           path: 'oauthredirect',
         });
         const authUrl = await request.makeAuthUrlAsync(googleDiscovery);

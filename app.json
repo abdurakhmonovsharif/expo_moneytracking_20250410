@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "moneytracking",
+    "scheme": "com.voxwallet.app",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "usesAppleSignIn": true,
-      "bundleIdentifier": "com.abdurakhmonovsharif.moneytracking",
+      "bundleIdentifier": "com.voxwallet.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Allow access to the microphone to record voice transactions.",
         "NSCameraUsageDescription": "Allow camera access to take wallet and profile photos.",
@@ -42,7 +42,7 @@
         "RECORD_AUDIO",
         "POST_NOTIFICATIONS"
       ],
-      "package": "com.abdurakhmonovsharif.moneytracking"
+      "package": "com.voxwallet.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"

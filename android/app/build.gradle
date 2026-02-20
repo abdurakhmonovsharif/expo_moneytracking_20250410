@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.abdurakhmonovsharif.moneytracking'
+    namespace 'com.voxwallet.app'
     defaultConfig {
-        applicationId 'com.abdurakhmonovsharif.moneytracking'
+        applicationId 'com.voxwallet.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // react-native-iap exposes a "store" flavor; default to Play store for this app.
