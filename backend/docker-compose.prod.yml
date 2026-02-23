@@ -15,7 +15,7 @@ services:
       FIREBASE_SERVICE_ACCOUNT_PATH: /run/secrets/firebase-service-account.json
       GOOGLE_PLAY_SERVICE_ACCOUNT_PATH: /run/secrets/google-play-service-account.json
     volumes:
-      - ${SECRETS_DIR:-./secrets}:/run/secrets:ro
+      - ./secrets:/run/secrets:ro
     expose:
       - "9000"
     restart: unless-stopped
