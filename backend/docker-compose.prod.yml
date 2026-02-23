@@ -1,12 +1,12 @@
-name: moneytracking-backend
+name: voxwallet
 
 services:
   api:
     build:
       context: .
       dockerfile: Dockerfile
-    image: moneytracking-backend:prod
-    container_name: moneytracking-api
+    image: voxwallet-api:prod
+    container_name: voxwallet
     env_file:
       - ${BACKEND_ENV_FILE:-.env.production}
     environment:
@@ -36,7 +36,7 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
-    container_name: moneytracking-nginx
+    container_name: voxwallet-nginx
     depends_on:
       api:
         condition: service_healthy
@@ -66,4 +66,4 @@ services:
 
 networks:
   default:
-    name: moneytracking-backend-net
+    name: voxwallet-net

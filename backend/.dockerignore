@@ -20,3 +20,9 @@ serviceAccount.json
 
 README.md
 docker-compose*.yml
+
+# Keep runtime source in context even if broader ignore rules are added later.
+!app/
+!app/**
+!requirements.txt
+!Dockerfile

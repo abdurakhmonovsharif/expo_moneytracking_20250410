@@ -181,6 +181,24 @@ cd backend
 BACKEND_ENV_FILE=.env.production.example docker compose -f docker-compose.prod.yml config
 ```
 
+### Firebase `Invalid JWT Signature` fix
+
+If backend startup fails with `invalid_grant` / `Invalid JWT Signature`, the service-account key is stale or mismatched.
+
+1. Create a new key in Google Cloud IAM for the configured `client_email`.
+2. Replace `backend/serviceAccount.json` (or `backend/secrets/firebase-service-account.json` in Docker) with that new JSON.
+3. Ensure `FIREBASE_SERVICE_ACCOUNT_PATH` points to the new file.
+4. Restart backend.
+
+### Firebase service-account file not found
+
+If startup fails with `Service account file not found`, Docker cannot see the expected JSON file.
+
+1. Place your Firebase key at `backend/secrets/firebase-service-account.json`.
+2. Confirm compose mount resolves to that folder:
+   `cd backend && docker compose -f docker-compose.prod.yml config | grep -n '/run/secrets'`
+3. Restart: `cd backend && docker compose -f docker-compose.prod.yml up -d --build`
+
 ## Push Notifications (FCM + Expo fallback)
 
 - Backend sends push when notification docs are created.
