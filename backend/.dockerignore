@@ -26,3 +26,4 @@ docker-compose*.yml
 !app/**
 !requirements.txt
 !Dockerfile
+!start.sh
