@@ -9,9 +9,11 @@ set -e
 : "${GUNICORN_MAX_REQUESTS_JITTER:=100}"
 
 cd /app
+export PYTHONPATH="/app:${PYTHONPATH:-}"
 
 exec gunicorn app.main:app \
   --chdir /app \
+  --pythonpath /app \
   --worker-class uvicorn.workers.UvicornWorker \
   --bind "0.0.0.0:${PORT}" \
   --workers "${GUNICORN_WORKERS}" \
