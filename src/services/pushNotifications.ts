@@ -1,8 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { auth } from "lib/firebase";
+import { secureStorage } from "lib/secureStorage";
 import { registerMyPushToken, unregisterMyPushToken } from "./notificationsService";
 
 type PushProvider = "fcm" | "expo";
@@ -126,7 +126,7 @@ const resolveNativePushToken = async (): Promise<{ token: string; provider: Push
 
 const readCachedToken = async (): Promise<CachedPushToken | null> => {
   try {
-    const raw = await AsyncStorage.getItem(PUSH_TOKEN_CACHE_KEY);
+    const raw = await secureStorage.getItem(PUSH_TOKEN_CACHE_KEY);
     if (!raw) {
       return null;
     }
@@ -141,11 +141,11 @@ const readCachedToken = async (): Promise<CachedPushToken | null> => {
 };
 
 const writeCachedToken = async (value: CachedPushToken) => {
-  await AsyncStorage.setItem(PUSH_TOKEN_CACHE_KEY, JSON.stringify(value));
+  await secureStorage.setItem(PUSH_TOKEN_CACHE_KEY, JSON.stringify(value));
 };
 
 const clearCachedToken = async () => {
-  await AsyncStorage.removeItem(PUSH_TOKEN_CACHE_KEY);
+  await secureStorage.removeItem(PUSH_TOKEN_CACHE_KEY);
 };
 
 export const registerPushNotificationsForCurrentUser = async (

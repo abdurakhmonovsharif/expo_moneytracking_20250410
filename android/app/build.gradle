@@ -80,6 +80,21 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+def readSigningValue = { String envName, String injectedProp ->
+    return System.getenv(envName) ?: findProperty(envName) ?: findProperty(injectedProp)
+}
+
+def releaseStoreFile = readSigningValue("ANDROID_UPLOAD_STORE_FILE", "android.injected.signing.store.file")
+def releaseStorePassword = readSigningValue("ANDROID_UPLOAD_STORE_PASSWORD", "android.injected.signing.store.password")
+def releaseKeyAlias = readSigningValue("ANDROID_UPLOAD_KEY_ALIAS", "android.injected.signing.key.alias")
+def releaseKeyPassword = readSigningValue("ANDROID_UPLOAD_KEY_PASSWORD", "android.injected.signing.key.password")
+
+def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+def isReleaseTask = gradle.startParameter.taskNames.any { taskName ->
+    def normalized = taskName.toLowerCase()
+    normalized.contains("release") || normalized.contains("bundle")
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -97,21 +112,23 @@ android {
         versionName "1.0.0"
     }
     signingConfigs {
-        debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
     buildTypes {
-        debug {
-            signingConfig signingConfigs.debug
-        }
+        debug {}
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            } else if (isReleaseTask && System.getenv("EAS_BUILD") != "true") {
+                throw new GradleException("Missing release signing config. Set ANDROID_UPLOAD_STORE_FILE, ANDROID_UPLOAD_STORE_PASSWORD, ANDROID_UPLOAD_KEY_ALIAS, ANDROID_UPLOAD_KEY_PASSWORD.")
+            }
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"

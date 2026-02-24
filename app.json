@@ -66,7 +66,8 @@
           "photosPermission": "Allow access to your photos to set wallet and profile images.",
           "cameraPermission": "Allow camera access to take wallet and profile photos."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "owner": "abdurakhmonovsharif"
   }

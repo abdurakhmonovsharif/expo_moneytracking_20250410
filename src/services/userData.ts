@@ -108,6 +108,29 @@ type BillDoc = {
   created_at: string;
 };
 
+const INITIAL_SYNC_TIMEOUT_MS = 12000;
+
+const withTimeout = <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message: string
+): Promise<T> =>
+  new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+
 const requireUser = () => {
   const user = auth.currentUser;
   if (!user) {
@@ -498,7 +521,11 @@ export const loadUserData = async (): Promise<{
 export const syncUserData = async (dispatch: AppDispatch) => {
   dispatch(resetAppState());
   await runWithAppRequest(async () => {
-    const data = await loadUserData();
+    const data = await withTimeout(
+      loadUserData(),
+      INITIAL_SYNC_TIMEOUT_MS,
+      "Initial user data sync timed out"
+    );
     dispatch(setWallets(data.wallets));
     dispatch(setUserProfile(data.profile));
     dispatch(setCurrency(data.currency));

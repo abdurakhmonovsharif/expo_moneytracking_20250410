@@ -46,6 +46,8 @@ import EmailSignUp from "screens/Auth/EmailSignUp";
 enableScreens();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 5000;
+
 const AppContainer = () => {
   const themes = useTheme();
   const dispatch = useAppDispatch();
@@ -54,7 +56,14 @@ const AppContainer = () => {
   const [signedIn, setSignedIn] = React.useState(false);
 
   React.useEffect(() => {
+    const bootstrapTimeout = setTimeout(() => {
+      // Fail-safe: never block the UI indefinitely if auth persistence is slow.
+      setSignedIn(Boolean(auth.currentUser));
+      setBootstrapped(true);
+    }, AUTH_BOOTSTRAP_TIMEOUT_MS);
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      clearTimeout(bootstrapTimeout);
       const isSignedIn = Boolean(user);
       setSignedIn(isSignedIn);
       setBootstrapped(true);
@@ -66,7 +75,10 @@ const AppContainer = () => {
         dispatch(resetAppState());
       }
     });
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(bootstrapTimeout);
+      unsubscribe();
+    };
   }, [dispatch]);
 
   React.useEffect(() => {

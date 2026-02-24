@@ -10,6 +10,19 @@ const config = {
   keyPrefix: '',
   storage: AsyncStorage,
   throttle: 1000,
+  migrate: async (state: any) => {
+    if (!state || !state.app) {
+      return state;
+    }
+    return {
+      ...state,
+      app: {
+        ...state.app,
+        appLoading: false,
+        pendingRequests: 0,
+      },
+    };
+  },
   // blacklist: ['app'],
   // whitelist: ['auth'],
 };

@@ -29,7 +29,7 @@ export const pickImageFromLibrary = async (): Promise<string | null> => {
     "Photo library permission is required."
   );
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ["images"],
     allowsEditing: true,
     aspect: [1, 1],
     quality: 0.75,
@@ -47,7 +47,7 @@ export const pickImageFromCamera = async (): Promise<string | null> => {
     "Camera permission is required."
   );
   const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ["images"],
     allowsEditing: true,
     aspect: [1, 1],
     quality: 0.75,
