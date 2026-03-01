@@ -20,6 +20,7 @@ import * as RNIap from "react-native-iap";
 import axios from "axios";
 // ----------------------------- Hooks ---------------------------------------
 import { useLayout } from "hooks";
+import { useCurrencyConversion } from "hooks/useCurrencyConversion";
 // ----------------------------- Assets ---------------------------------------
 import { Images } from "assets/images";
 // ----------------------------- Components && Elements -----------------------
@@ -36,9 +37,7 @@ import SuccessPay from "./SuccessPay";
 import { useTranslation } from "i18n/useTranslation";
 import {
   endIapConnection,
-  extractSubscriptionPrice,
   initIapConnection,
-  loadProductsBySkus,
   loadSubscriptionsBySkus,
   requestTariffPurchase,
   verifyPurchaseWithBackend,
@@ -53,12 +52,26 @@ import {
   SubscriptionAccessProfile,
   TariffPlan,
 } from "services/tariffService";
+import convertPrice from "utils/convertPrice";
+import { setFxRates } from "reduxs/reducers/app-reducer";
+import { loadFxRates } from "services/fxRates";
+
+const isIapRequestCanceledError = (err: unknown): boolean => {
+  const message = err instanceof Error ? err.message : String(err ?? "");
+  return message.includes("Previous request was cancelled due to a new request");
+};
+
+const normalizeCurrencyCode = (value?: string | null) =>
+  String(value ?? "")
+    .trim()
+    .toUpperCase();
 
 const GetPremium = React.memo(() => {
   const styles = useStyleSheet(themedStyles);
   const theme = useTheme();
   const { height, width, bottom } = useLayout();
   const { t } = useTranslation();
+  const { convert, currency: currentCurrency, fxRates } = useCurrencyConversion();
   const dispatch = useDispatch();
 
   const [visible, setVisible] = React.useState(false);
@@ -69,13 +82,13 @@ const GetPremium = React.memo(() => {
   const [subscriptionsBySku, setSubscriptionsBySku] = React.useState<
     Record<string, RNIap.Subscription>
   >({});
-  const [productsBySku, setProductsBySku] = React.useState<Record<string, RNIap.Product>>({});
   const [profile, setProfile] = React.useState<SubscriptionAccessProfile | null>(null);
   const [iapReady, setIapReady] = React.useState(false);
   const pendingVerifyRef = React.useRef<{
     isSubscription: boolean;
     productId: string;
   } | null>(null);
+  const bootInFlightRef = React.useRef(false);
 
   const closeModal = () => {
     setVisible(false);
@@ -121,35 +134,77 @@ const GetPremium = React.memo(() => {
     return theme["background-basic-color-3"];
   }, [theme]);
 
+  const canConvertCurrency = React.useCallback(
+    (fromCode: string, toCode: string) => {
+      if (fromCode === toCode) return true;
+      const fromRate = fromCode === "UZS" ? 1 : fxRates?.[fromCode];
+      const toRate = toCode === "UZS" ? 1 : fxRates?.[toCode];
+      return Boolean(fromRate && toRate);
+    },
+    [fxRates]
+  );
+
+  const resolveTariffAmountAndCurrency = React.useCallback(
+    (tariff: TariffPlan) => {
+      const sourceCurrency = normalizeCurrencyCode(tariff.currency || "USD") || "USD";
+      const targetCurrency = normalizeCurrencyCode(currentCurrency || sourceCurrency) || sourceCurrency;
+      const sourceAmount = Number(tariff.price_amount || 0);
+      if (!Number.isFinite(sourceAmount)) {
+        return { amount: 0, currency: targetCurrency };
+      }
+      if (!canConvertCurrency(sourceCurrency, targetCurrency)) {
+        return { amount: sourceAmount, currency: sourceCurrency };
+      }
+      const converted = convert(sourceAmount, sourceCurrency);
+      return { amount: converted, currency: targetCurrency };
+    },
+    [canConvertCurrency, convert, currentCurrency]
+  );
+
+  const formatTariffAmount = React.useCallback(
+    (amount: number, currencyCode: string, maxDigits: number = 2) =>
+      convertPrice({
+        num: amount,
+        maxDigits,
+        currency: currencyCode,
+      }),
+    []
+  );
+
   const fallbackPrice = React.useCallback((tariff: TariffPlan) => {
-    if (tariff.price_label && tariff.price_label.trim().length > 0) {
-      return tariff.price_label;
-    }
-    const amount = Number(tariff.price_amount || 0);
-    return `${tariff.currency} ${amount.toFixed(2)}`;
-  }, []);
+    const { amount, currency } = resolveTariffAmountAndCurrency(tariff);
+    return formatTariffAmount(amount, currency);
+  }, [formatTariffAmount, resolveTariffAmountAndCurrency]);
+
+  const getTariffSubPriceLabel = React.useCallback(
+    (tariff: TariffPlan) => {
+      if (tariff.purchase_type !== "subscription") {
+        return "";
+      }
+      const { amount, currency } = resolveTariffAmountAndCurrency(tariff);
+      const count = Math.max(1, Number(tariff.billing_period_count || 1));
+      if (tariff.billing_period_unit === "year") {
+        return `${formatTariffAmount(amount / (12 * count), currency)} / month`;
+      }
+      if (tariff.billing_period_unit === "month") {
+        return `${formatTariffAmount(amount / count, currency)} / month`;
+      }
+      if (tariff.billing_period_unit === "week") {
+        return `${formatTariffAmount(amount / count, currency)} / week`;
+      }
+      if (tariff.billing_period_unit === "day") {
+        return `${formatTariffAmount(amount / count, currency)} / day`;
+      }
+      return "";
+    },
+    [formatTariffAmount, resolveTariffAmountAndCurrency]
+  );
 
   const getStorePriceLabel = React.useCallback(
     (tariff: TariffPlan) => {
-      const productId = getTariffProductId(tariff);
-      if (!productId) {
-        return fallbackPrice(tariff);
-      }
-      if (tariff.purchase_type === "subscription") {
-        const subscription = subscriptionsBySku[productId] ?? null;
-        const dynamicPrice = extractSubscriptionPrice(subscription);
-        return dynamicPrice || fallbackPrice(tariff);
-      }
-      const product = productsBySku[productId];
-      const dynamicPrice =
-        product?.localizedPrice ||
-        product?.displayPrice ||
-        product?.oneTimePurchaseOfferDetails?.formattedPrice ||
-        product?.price ||
-        "";
-      return dynamicPrice || fallbackPrice(tariff);
+      return fallbackPrice(tariff);
     },
-    [fallbackPrice, productsBySku, subscriptionsBySku]
+    [fallbackPrice]
   );
 
   const trialAvailable = React.useMemo(() => {
@@ -215,10 +270,29 @@ const GetPremium = React.memo(() => {
   }, []);
 
   const bootstrap = React.useCallback(async () => {
+    if (bootInFlightRef.current) {
+      return;
+    }
+    bootInFlightRef.current = true;
     setBootLoading(true);
     try {
       await initIapConnection();
       setIapReady(true);
+      if (!fxRates || Object.keys(fxRates).length === 0) {
+        const fxPayload = await loadFxRates().catch(() => null);
+        if (fxPayload?.rates) {
+          dispatch(
+            setFxRates({
+              rates: fxPayload.rates,
+              updatedAt: fxPayload.updatedAt,
+              date: fxPayload.date,
+              previousDate: fxPayload.previousDate,
+              previousRates: fxPayload.previousRates,
+              deltaRates: fxPayload.deltaRates,
+            })
+          );
+        }
+      }
       const [apiTariffs, me] = await Promise.all([
         fetchTariffs(),
         fetchMySubscriptionProfile().catch(() => null),
@@ -226,37 +300,43 @@ const GetPremium = React.memo(() => {
       if (me) {
         setProfile(me);
       }
-      setTariffs(apiTariffs);
+      const subscriptionTariffs = apiTariffs.filter(
+        (item) =>
+          item.purchase_type === "subscription" &&
+          item.billing_period_unit !== "lifetime" &&
+          item.is_active !== false
+      );
+      setTariffs(subscriptionTariffs);
       const initialSelection =
-        apiTariffs.find((item) => item.is_featured) ?? apiTariffs[0] ?? null;
+        subscriptionTariffs.find((item) => item.is_featured) ??
+        subscriptionTariffs[0] ??
+        null;
       setSelectedTariffId(initialSelection?.id ?? null);
 
-      const subscriptionSkus = apiTariffs
+      const subscriptionSkus = subscriptionTariffs
         .filter((item) => item.purchase_type === "subscription")
         .map((item) => getTariffProductId(item))
         .filter((value): value is string => Boolean(value));
-      const productSkus = apiTariffs
-        .filter((item) => item.purchase_type === "one_time")
-        .map((item) => getTariffProductId(item))
-        .filter((value): value is string => Boolean(value));
 
-      const [subscriptions, products] = await Promise.all([
-        loadSubscriptionsBySkus(subscriptionSkus),
-        loadProductsBySkus(productSkus),
-      ]);
+      // iOS StoreKit bridge keeps only the latest products request.
+      // Keep a single subscriptions request to avoid E_CANCELED races.
+      const subscriptions = await loadSubscriptionsBySkus(subscriptionSkus);
       setSubscriptionsBySku(
         Object.fromEntries(subscriptions.map((item) => [item.productId, item]))
       );
-      setProductsBySku(Object.fromEntries(products.map((item) => [item.productId, item])));
     } catch (err: unknown) {
+      if (isIapRequestCanceledError(err)) {
+        return;
+      }
       if (__DEV__) {
         console.warn("GetPremium bootstrap failed", err);
       }
       Alert.alert(t("Please try again."));
     } finally {
+      bootInFlightRef.current = false;
       setBootLoading(false);
     }
-  }, [t]);
+  }, [dispatch, fxRates, t]);
 
   const onPurchaseTariff = React.useCallback(
     async (tariff: TariffPlan) => {
@@ -432,6 +512,7 @@ const GetPremium = React.memo(() => {
                 const itemAccent = resolveAccent(item);
                 const surface = resolveSurface(item);
                 const priceLabel = getStorePriceLabel(item);
+                const priceSubLabel = getTariffSubPriceLabel(item);
                 return (
                   <LayoutCustom
                     key={item.id}
@@ -452,14 +533,19 @@ const GetPremium = React.memo(() => {
                       </LayoutCustom>
                     ) : null}
                     <Text category="subhead" status="note">
-                      {item.title}
+                      {item.name || item.title}
                     </Text>
+                    {item.name && item.title && item.title !== item.name ? (
+                      <Text category="c1" status="note" marginTop={4}>
+                        {item.title}
+                      </Text>
+                    ) : null}
                     <Text category="h3" marginTop={6}>
                       {priceLabel}
                     </Text>
-                    {item.price_sub_label ? (
+                    {priceSubLabel ? (
                       <Text status="note" marginTop={6}>
-                        {item.price_sub_label}
+                        {priceSubLabel}
                       </Text>
                     ) : null}
                     {item.trial_days > 0 ? (

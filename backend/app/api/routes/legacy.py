@@ -276,6 +276,33 @@ class AdminTariffUpdateRequest(TariffPlanPayload):
     pass
 
 
+class AdminTariffPatchRequest(BaseModel):
+    name: Optional[str] = None
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    description: Optional[str] = None
+    access_plan: Optional[str] = None
+    purchase_type: Optional[str] = None
+    billing_period_unit: Optional[str] = None
+    billing_period_count: Optional[int] = None
+    price_amount: Optional[float] = None
+    currency: Optional[str] = None
+    price_label: Optional[str] = None
+    price_sub_label: Optional[str] = None
+    discount_percent: Optional[int] = None
+    discount_label: Optional[str] = None
+    badge_text: Optional[str] = None
+    trial_days: Optional[int] = None
+    is_featured: Optional[bool] = None
+    is_active: Optional[bool] = None
+    sort_order: Optional[int] = None
+    cta_title: Optional[str] = None
+    cta_subtitle: Optional[str] = None
+    cta_button_text: Optional[str] = None
+    nighth_style: Optional[Dict[str, Any]] = None
+    store_product_ids: Optional[TariffStoreProductIds] = None
+
+
 class TariffPlanResponse(TariffPlanPayload):
     id: str
     created_at: Optional[str] = None
@@ -1278,6 +1305,52 @@ def _upsert_tariff(
     return _tariff_doc_to_response(normalized_id, to_store)
 
 
+def _patch_tariff(
+    tariff_id: str,
+    payload: AdminTariffPatchRequest,
+) -> TariffPlanResponse:
+    existing = _get_tariff_by_id(tariff_id)
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        return existing
+
+    merged = existing.model_dump(
+        exclude={"id", "created_at", "updated_at"},
+        mode="python",
+    )
+
+    if "store_product_ids" in updates and updates["store_product_ids"] is not None:
+        incoming_store_ids = updates["store_product_ids"]
+        if isinstance(incoming_store_ids, TariffStoreProductIds):
+            incoming_store_ids = incoming_store_ids.model_dump(exclude_unset=True)
+        if not isinstance(incoming_store_ids, dict):
+            incoming_store_ids = {}
+        current_store_ids = merged.get("store_product_ids") or {}
+        if isinstance(current_store_ids, TariffStoreProductIds):
+            current_store_ids = current_store_ids.model_dump(exclude_unset=True)
+        if not isinstance(current_store_ids, dict):
+            current_store_ids = {}
+        merged["store_product_ids"] = {
+            **current_store_ids,
+            **incoming_store_ids,
+        }
+        updates = {k: v for k, v in updates.items() if k != "store_product_ids"}
+
+    merged.update(updates)
+
+    normalized_payload = _normalize_tariff_payload(TariffPlanPayload(**merged))
+    db = get_firestore_client()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    normalized_id = existing.id
+    to_store = {
+        **normalized_payload,
+        "created_at": existing.created_at or now_iso,
+        "updated_at": now_iso,
+    }
+    db.collection("tariff_plans").document(normalized_id).set(to_store)
+    return _tariff_doc_to_response(normalized_id, to_store)
+
+
 def _find_tariff_by_store_product_id(product_id: Optional[str], platform: str) -> Optional[TariffPlanResponse]:
     if not product_id:
         return None
@@ -1297,15 +1370,11 @@ def _seed_tariff_plans(settings: Settings) -> None:
     now_iso = datetime.now(timezone.utc).isoformat()
     google_sub_ids = sorted(settings.google_play_subscription_id_set)
     apple_sub_ids = sorted(settings.apple_subscription_id_set)
-    google_product_ids = sorted(settings.google_play_product_id_set)
-    apple_product_ids = sorted(settings.apple_product_id_set)
 
     monthly_android = google_sub_ids[0] if len(google_sub_ids) > 0 else "monthly_premium"
     yearly_android = google_sub_ids[1] if len(google_sub_ids) > 1 else monthly_android
     monthly_ios = apple_sub_ids[0] if len(apple_sub_ids) > 0 else "monthly_premium"
     yearly_ios = apple_sub_ids[1] if len(apple_sub_ids) > 1 else monthly_ios
-    lifetime_android = google_product_ids[0] if len(google_product_ids) > 0 else "premium_lifetime"
-    lifetime_ios = apple_product_ids[0] if len(apple_product_ids) > 0 else "premium_lifetime"
 
     defaults: List[tuple[str, TariffPlanPayload]] = [
         (
@@ -1319,10 +1388,10 @@ def _seed_tariff_plans(settings: Settings) -> None:
                 purchase_type="subscription",
                 billing_period_unit="month",
                 billing_period_count=1,
-                price_amount=9.99,
+                price_amount=5.99,
                 currency="USD",
-                price_label="US$9.99",
-                price_sub_label="US$2.31/week",
+                price_label="US$5.99",
+                price_sub_label="US$5.99/month",
                 discount_percent=0,
                 discount_label=None,
                 badge_text=None,
@@ -1351,56 +1420,24 @@ def _seed_tariff_plans(settings: Settings) -> None:
                 purchase_type="subscription",
                 billing_period_unit="year",
                 billing_period_count=1,
-                price_amount=49.99,
+                price_amount=59.99,
                 currency="USD",
-                price_label="US$49.99",
-                price_sub_label="US$0.96/week",
-                discount_percent=58,
-                discount_label="SAVE 58%",
+                price_label="US$59.99",
+                price_sub_label="US$5.00/month",
+                discount_percent=28,
+                discount_label="SAVE 28%",
                 badge_text="7 days free",
                 trial_days=7,
                 is_featured=True,
                 is_active=True,
                 sort_order=20,
-                cta_title="Try 7-days for free, then US$49.99/year.",
+                cta_title="Try 7-days for free, then US$59.99/year.",
                 cta_subtitle="You can cancel anytime.",
                 cta_button_text="TRY FREE & SUBSCRIBE",
                 nighth_style={"accent": "#7B61FF"},
                 store_product_ids=TariffStoreProductIds(
                     ios=yearly_ios,
                     android=yearly_android,
-                ),
-            ),
-        ),
-        (
-            "premium_lifetime",
-            TariffPlanPayload(
-                name="Lifetime Premium",
-                title="UNLIMITED",
-                subtitle=None,
-                description="One-time premium plan",
-                access_plan="premium",
-                purchase_type="one_time",
-                billing_period_unit="lifetime",
-                billing_period_count=0,
-                price_amount=99.99,
-                currency="USD",
-                price_label="US$99.99",
-                price_sub_label="one-off",
-                discount_percent=0,
-                discount_label=None,
-                badge_text=None,
-                trial_days=0,
-                is_featured=False,
-                is_active=True,
-                sort_order=30,
-                cta_title=None,
-                cta_subtitle=None,
-                cta_button_text="UNLOCK LIFETIME",
-                nighth_style={"accent": "#7B61FF"},
-                store_product_ids=TariffStoreProductIds(
-                    ios=lifetime_ios,
-                    android=lifetime_android,
                 ),
             ),
         ),
@@ -2044,6 +2081,12 @@ def get_tariffs(
         include_inactive=allow_inactive,
         platform=platform,
     )
+    # Mobile paywall for VoxWallet currently supports subscription plans only.
+    tariffs = [
+        item
+        for item in tariffs
+        if item.purchase_type == "subscription" and item.billing_period_unit != "lifetime"
+    ]
     return TariffPlanListResponse(tariffs=tariffs)
 
 
@@ -2454,6 +2497,15 @@ def admin_update_tariff(
     admin: Dict[str, Any] = Depends(require_admin_user),
 ):
     return _upsert_tariff(tariff_id, payload, create_only=False)
+
+
+@router.patch("/admin/tariffs/{tariff_id}", response_model=TariffPlanResponse)
+def admin_patch_tariff(
+    tariff_id: str,
+    payload: AdminTariffPatchRequest,
+    admin: Dict[str, Any] = Depends(require_admin_user),
+):
+    return _patch_tariff(tariff_id, payload)
 
 
 @router.delete("/admin/tariffs/{tariff_id}", response_model=TariffPlanResponse)
