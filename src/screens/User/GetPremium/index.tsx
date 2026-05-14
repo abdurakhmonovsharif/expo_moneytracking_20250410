@@ -61,6 +61,15 @@ const isIapRequestCanceledError = (err: unknown): boolean => {
   return message.includes("Previous request was cancelled due to a new request");
 };
 
+const isIapUnavailableError = (err: unknown): boolean => {
+  const code =
+    typeof err === "object" && err !== null && "code" in err
+      ? String((err as { code?: unknown }).code ?? "")
+      : "";
+  const message = err instanceof Error ? err.message : String(err ?? "");
+  return code === "E_IAP_NOT_AVAILABLE" || message.includes("E_IAP_NOT_AVAILABLE");
+};
+
 const normalizeCurrencyCode = (value?: string | null) =>
   String(value ?? "")
     .trim()
@@ -328,6 +337,13 @@ const GetPremium = React.memo(() => {
       if (isIapRequestCanceledError(err)) {
         return;
       }
+      setIapReady(false);
+      if (isIapUnavailableError(err)) {
+        if (__DEV__) {
+          console.warn("IAP is not available in this build or device", err);
+        }
+        return;
+      }
       if (__DEV__) {
         console.warn("GetPremium bootstrap failed", err);
       }
@@ -345,6 +361,13 @@ const GetPremium = React.memo(() => {
         Alert.alert(
           t("Please try again."),
           "Store product ID is not configured for this tariff."
+        );
+        return;
+      }
+      if (!iapReady) {
+        Alert.alert(
+          t("Please try again."),
+          "In-app purchases are not available in this build or on this device."
         );
         return;
       }
@@ -366,7 +389,7 @@ const GetPremium = React.memo(() => {
         setLoading(false);
       }
     },
-    [subscriptionsBySku, t]
+    [iapReady, subscriptionsBySku, t]
   );
 
   const onSubmit = React.useCallback(async () => {
@@ -408,42 +431,61 @@ const GetPremium = React.memo(() => {
   }, [dispatch, onPurchaseTariff, refreshProfile, selectedTariff, t, trialAvailable]);
 
   React.useEffect(() => {
-    let isMounted = true;
-    const purchaseUpdate = RNIap.purchaseUpdatedListener(async (purchase) => {
-      try {
-        setLoading(true);
-        await verifyPurchaseWithBackend(purchase, pendingVerifyRef.current ?? undefined);
-        pendingVerifyRef.current = null;
-        await RNIap.finishTransaction({ purchase, isConsumable: false });
-        await syncUserData(dispatch);
-        await refreshProfile();
-        if (!isMounted) return;
-        setVisible(true);
-      } catch (err: any) {
-        Alert.alert(t("Please try again."), err?.message ?? t("Please try again."));
-      } finally {
-        setLoading(false);
-      }
-    });
-    const purchaseError = RNIap.purchaseErrorListener((error) => {
-      pendingVerifyRef.current = null;
-      setLoading(false);
-      if (__DEV__) {
-        console.warn("IAP error", error);
-      }
-      Alert.alert(t("Please try again."), error?.message ?? t("Please try again."));
-    });
-
     bootstrap();
+
+    return () => {
+      pendingVerifyRef.current = null;
+      endIapConnection().catch(() => undefined);
+    };
+  }, [bootstrap]);
+
+  React.useEffect(() => {
+    if (!iapReady) {
+      return;
+    }
+    let isMounted = true;
+    let purchaseUpdate: { remove: () => void } | null = null;
+    let purchaseError: { remove: () => void } | null = null;
+
+    try {
+      purchaseUpdate = RNIap.purchaseUpdatedListener(async (purchase) => {
+        try {
+          setLoading(true);
+          await verifyPurchaseWithBackend(purchase, pendingVerifyRef.current ?? undefined);
+          pendingVerifyRef.current = null;
+          await RNIap.finishTransaction({ purchase, isConsumable: false });
+          await syncUserData(dispatch);
+          await refreshProfile();
+          if (!isMounted) return;
+          setVisible(true);
+        } catch (err: any) {
+          Alert.alert(t("Please try again."), err?.message ?? t("Please try again."));
+        } finally {
+          setLoading(false);
+        }
+      });
+      purchaseError = RNIap.purchaseErrorListener((error) => {
+        pendingVerifyRef.current = null;
+        setLoading(false);
+        if (__DEV__) {
+          console.warn("IAP error", error);
+        }
+        Alert.alert(t("Please try again."), error?.message ?? t("Please try again."));
+      });
+    } catch (err) {
+      setIapReady(false);
+      if (__DEV__) {
+        console.warn("Failed to register IAP listeners", err);
+      }
+    }
 
     return () => {
       isMounted = false;
       pendingVerifyRef.current = null;
-      purchaseUpdate.remove();
-      purchaseError.remove();
-      endIapConnection().catch(() => undefined);
+      purchaseUpdate?.remove();
+      purchaseError?.remove();
     };
-  }, [bootstrap, dispatch, refreshProfile, t]);
+  }, [dispatch, iapReady, refreshProfile, t]);
 
   const accentColor = resolveAccent(selectedTariff);
 

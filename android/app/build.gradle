@@ -108,8 +108,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // react-native-iap exposes a "store" flavor; default to Play store for this app.
         missingDimensionStrategy 'store', 'play'
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 26031502
+        versionName "1.0.2"
     }
     signingConfigs {
         if (hasReleaseSigning) {
@@ -126,7 +126,7 @@ android {
         release {
             if (hasReleaseSigning) {
                 signingConfig signingConfigs.release
-            } else if (isReleaseTask && System.getenv("EAS_BUILD") != "true") {
+            } else if (isReleaseTask && System.getenv("EAS_BUILD") != "true" && System.getenv("EAS_LOCAL_BUILD") != "true") {
                 throw new GradleException("Missing release signing config. Set ANDROID_UPLOAD_STORE_FILE, ANDROID_UPLOAD_STORE_PASSWORD, ANDROID_UPLOAD_KEY_ALIAS, ANDROID_UPLOAD_KEY_PASSWORD.")
             }
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)

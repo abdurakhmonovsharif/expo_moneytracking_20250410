@@ -24,10 +24,6 @@ const getImagePicker = async () => {
 
 export const pickImageFromLibrary = async (): Promise<string | null> => {
   const ImagePicker = await getImagePicker();
-  await ensurePermission(
-    ImagePicker.requestMediaLibraryPermissionsAsync,
-    "Photo library permission is required."
-  );
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ["images"],
     allowsEditing: true,

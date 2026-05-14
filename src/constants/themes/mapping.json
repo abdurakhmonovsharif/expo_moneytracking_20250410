@@ -1934,7 +1934,7 @@
       "appearances": {
         "default": {
           "mapping": {
-            "paddingHorizontal": 8,
+            "paddingHorizontal": 12,
             "textMarginHorizontal": 8,
             "textFontFamily": "text-font-family",
             "iconWidth": 24,
@@ -1951,28 +1951,28 @@
           "variantGroups": {
             "status": {
               "basic": {
-                "borderColor": "transparent",
-                "backgroundColor": "background-basic-color-2",
-                "textColor": "text-basic-color",
+                "borderColor": "background-basic-color-10",
+                "backgroundColor": "background-basic-color-12",
+                "textColor": "text-black-color",
                 "labelColor": "text-hint-color",
                 "captionColor": "text-hint-color",
-                "placeholderColor": "text-hint-color",
+                "placeholderColor": "text-placeholder-color",
                 "iconTintColor": "text-hint-color",
                 "state": {
                   "focused": {
-                    "borderColor": "color-primary-active-border",
-                    "backgroundColor": "background-basic-color-1",
-                    "textColor": "text-basic-color",
+                    "borderColor": "color-primary-default",
+                    "backgroundColor": "background-basic-color-12",
+                    "textColor": "text-black-color",
                     "iconTintColor": "text-primary-color"
                   },
                   "hover": {
-                    "borderColor": "border-basic-color-4",
-                    "backgroundColor": "background-basic-color-3"
+                    "borderColor": "background-basic-color-9",
+                    "backgroundColor": "background-basic-color-12"
                   },
                   "disabled": {
-                    "borderColor": "border-basic-color-4",
-                    "backgroundColor": "background-basic-color-2",
-                    "textColor": "text-disabled-color",
+                    "borderColor": "background-basic-color-10",
+                    "backgroundColor": "background-basic-color-11",
+                    "textColor": "text-hint-color",
                     "labelColor": "text-disabled-color",
                     "captionColor": "text-disabled-color",
                     "placeholderColor": "text-disabled-color",
@@ -2234,10 +2234,10 @@
                 "textFontWeight": "normal"
               },
               "medium": {
-                "minHeight": 47,
+                "minHeight": 48,
                 "borderRadius": 12,
                 "borderWidth": 1,
-                "paddingVertical": 7,
+                "paddingVertical": 8,
                 "iconWidth": 16,
                 "iconHeight": 16,
                 "textFontSize": "text-body-1-font-size",
@@ -2668,7 +2668,7 @@
       "appearances": {
         "default": {
           "mapping": {
-            "paddingHorizontal": 8,
+            "paddingHorizontal": 12,
             "iconWidth": 24,
             "iconHeight": 24,
             "iconMarginHorizontal": 8,
@@ -2690,31 +2690,33 @@
           "variantGroups": {
             "status": {
               "basic": {
-                "borderColor": "border-basic-color-4",
-                "backgroundColor": "background-basic-color-2",
-                "textColor": "text-basic-color",
+                "borderColor": "background-basic-color-10",
+                "backgroundColor": "background-basic-color-12",
+                "textColor": "text-black-color",
                 "labelColor": "text-hint-color",
                 "captionColor": "text-hint-color",
-                "placeholderColor": "text-hint-color",
+                "placeholderColor": "text-placeholder-color",
                 "iconTintColor": "text-hint-color",
                 "state": {
                   "focused": {
                     "borderColor": "color-primary-default",
-                    "backgroundColor": "background-basic-color-1"
+                    "backgroundColor": "background-basic-color-12",
+                    "iconTintColor": "text-primary-color"
                   },
                   "hover": {
-                    "borderColor": "border-basic-color-4",
-                    "backgroundColor": "background-basic-color-3"
+                    "borderColor": "background-basic-color-9",
+                    "backgroundColor": "background-basic-color-12"
                   },
                   "active": {
                     "borderColor": "color-primary-default",
-                    "backgroundColor": "background-basic-color-1"
+                    "backgroundColor": "background-basic-color-12",
+                    "iconTintColor": "text-primary-color"
                   },
                   "disabled": {
-                    "borderColor": "border-basic-color-4",
-                    "backgroundColor": "background-basic-color-2",
+                    "borderColor": "background-basic-color-10",
+                    "backgroundColor": "background-basic-color-11",
                     "placeholderColor": "text-disabled-color",
-                    "textColor": "text-disabled-color",
+                    "textColor": "text-hint-color",
                     "iconTintColor": "text-disabled-color"
                   }
                 }
@@ -2937,8 +2939,8 @@
               "medium": {
                 "borderRadius": 12,
                 "borderWidth": 1,
-                "minHeight": 47,
-                "paddingVertical": 12,
+                "minHeight": 48,
+                "paddingVertical": 8,
                 "paddingHorizontal": 16,
                 "textFontSize": "text-body-1-font-size",
                 "textFontWeight": "text-body-1-font-weight",

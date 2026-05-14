@@ -18,13 +18,20 @@ const CustomSelect: React.FC<ICustomSelectProps> = ({ symbol, title, onPress, im
   const {width}=useLayout()
 
   return (
-    <LayoutCustom horizontal itemsCenter justify="space-between" onPress={onPress} padding={16}>
+    <LayoutCustom
+      horizontal
+      itemsCenter
+      justify="space-between"
+      onPress={onPress}
+      padding={16}
+      style={styles.container}
+    >
       <LayoutCustom horizontal itemsCenter gap={16}>
-        {symbol && <Text category="h3">{symbol}</Text>}
+        {symbol && <Text category="h3" status="black">{symbol}</Text>}
         {/* @ts-ignore */}
         {image && <Image source={image} style={styles.image} />}
         {icon && <Icon pack="assets" name={icon} style={styles.icon} />}
-        <Text category="body" numberOfLines={1} maxWidth={250*(width/375)}>{title}</Text>
+        <Text category="body" status="black" numberOfLines={1} maxWidth={250*(width/375)}>{title}</Text>
       </LayoutCustom>
       <Icon pack="assets" name="caret-right" style={styles.caret} />
     </LayoutCustom>
@@ -34,9 +41,16 @@ const CustomSelect: React.FC<ICustomSelectProps> = ({ symbol, title, onPress, im
 export default CustomSelect;
 
 const themedStyles = StyleService.create({
-  container: {},
+  container: {
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'background-basic-color-10',
+    backgroundColor: 'background-basic-color-12',
+    marginVertical: 4,
+  },
   caret: {
-    tintColor: 'text-platinum-color',
+    tintColor: 'text-hint-color',
     width: 20,
     height: 20,
   },
@@ -45,7 +59,7 @@ const themedStyles = StyleService.create({
     height: 28,
   },
   icon: {
-    tintColor: 'text-basic-color',
+    tintColor: 'text-hint-color',
     width: 28,
     height: 28,
   },
